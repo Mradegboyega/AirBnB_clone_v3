@@ -6,7 +6,7 @@ from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
-
+import hashlib  # Add this import for hashing
 
 class User(BaseModel, Base):
     """Representation of a user """
@@ -27,3 +27,19 @@ class User(BaseModel, Base):
     def __init__(self, *args, **kwargs):
         """initializes user"""
         super().__init__(*args, **kwargs)
+        if getenv("HBNB_TYPE_STORAGE") != "db":
+            self.password = hashlib.md5(self.password.encode()).hexdigest()
+
+    def save(self):
+        """Hash the password before saving"""
+        if getenv("HBNB_TYPE_STORAGE") != "db":
+            self.password = hashlib.md5(self.password.encode()).hexdigest()
+        super().save()
+
+    def to_dict(self, include_password=False):  # Update this method
+        """returns a dictionary containing all keys/values of the instance"""
+        new_dict = super().to_dict()
+        if not include_password and "password" in new_dict:  # Exclude password
+            del new_dict["password"]
+        return new_dict
+
